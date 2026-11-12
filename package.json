@@ -1,0 +1,24 @@
+{
+  "name": "spicy-studio-cloudflare-free-tier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Invite-only image and video generation studio for Cloudflare Workers Free, D1, R2 and Durable Objects.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply spicy-studio-cloudflare-free-tier --local",
+    "db:migrate:remote": "wrangler d1 migrations apply spicy-studio-cloudflare-free-tier --remote",
+    "test": "node test/contracts.test.js && node test/crypto.test.js",
+    "check": "wrangler deploy --dry-run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "wrangler": "^4.42.0"
+  }
+}

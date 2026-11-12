@@ -1,0 +1,8 @@
+# Copy this file to .dev.vars for local development.
+# Generate values with:
+#   openssl rand -hex 32        (SETUP_TOKEN)
+#   openssl rand -base64 32     (KEY_ENCRYPTION_SECRET)
+
+SETUP_TOKEN=replace-with-a-long-random-token
+KEY_ENCRYPTION_SECRET=replace-with-base64-encoded-32-bytes
+APP_ORIGIN=http://localhost:8787
