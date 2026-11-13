@@ -3,6 +3,7 @@ node_modules/
 .mf/
 dist/
 coverage/
+.local-preview/
 
 .dev.vars
 .env

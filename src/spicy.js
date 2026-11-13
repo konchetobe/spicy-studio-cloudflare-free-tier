@@ -1,4 +1,5 @@
 const DEFAULT_BASE = "https://spicymodels.ai/api/v1";
+const IS_NODE = typeof process !== "undefined" && Boolean(process.versions?.node);
 
 export class SpicyError extends Error {
   constructor(message, { status = 0, code = 0, requestId = "", details = null, taskId = null } = {}) {
@@ -127,6 +128,7 @@ export async function uploadMedia(env, key, body, filename, contentType) {
       "Content-Type": `multipart/form-data; boundary=${boundary}`,
     }),
     body: multipartBody(body, filename, contentType, boundary),
+    ...(IS_NODE ? { duplex: "half" } : {}),
     signal: AbortSignal.timeout(180_000),
   });
   const parsed = await parseBody(res);

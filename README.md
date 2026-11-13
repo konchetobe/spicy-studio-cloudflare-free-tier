@@ -111,28 +111,22 @@ There is no email sending on the free tier. Invite and password-reset links must
 
 ## Local development
 
-Create a local secrets file:
+Wrangler's local runtime (`workerd`) may not run on Android/Termux. For phones and other environments where `wrangler dev` cannot start, this repo includes a Node preview server with local D1/R2/DO stand-ins:
 
 ```bash
 cp .dev.vars.example .dev.vars
+# edit .dev.vars, then:
+npm run dev:local
 ```
 
-Edit `.dev.vars`:
+Open <http://localhost:8787>. The preview uses SQLite via `sql.js`, local files under `.local-preview/r2`, and in-process Durable Objects. It is for local UI work only; the deployed Worker always uses Cloudflare bindings.
 
-```dotenv
-SETUP_TOKEN=local-test-token
-KEY_ENCRYPTION_SECRET=<base64-encoded 32 bytes>
-APP_ORIGIN=http://localhost:8787
-```
-
-Apply the schema locally and start Wrangler:
+On a normal desktop, the standard Wrangler flow is:
 
 ```bash
 npm run db:migrate:local
 npm run dev
 ```
-
-Open <http://localhost:8787>. D1, R2, and Durable Objects run in local emulation. No Cloudflare account is required for local development.
 
 ## Admin and user flow
 

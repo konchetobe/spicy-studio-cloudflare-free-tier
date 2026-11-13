@@ -6,6 +6,7 @@
   "description": "Invite-only image and video generation studio for Cloudflare Workers Free, D1, R2 and Durable Objects.",
   "scripts": {
     "dev": "wrangler dev",
+    "dev:local": "node dev/local-server.mjs",
     "deploy": "wrangler deploy",
     "db:migrate:local": "wrangler d1 migrations apply spicy-studio-cloudflare-free-tier --local",
     "db:migrate:remote": "wrangler d1 migrations apply spicy-studio-cloudflare-free-tier --remote",
@@ -19,6 +20,8 @@
     "hono": "^4.6.14"
   },
   "devDependencies": {
+    "@hono/node-server": "^2.1.8",
+    "sql.js": "^1.16.0",
     "wrangler": "^4.42.0"
   }
 }
