@@ -17,6 +17,12 @@
       "migrations_dir": "./migrations"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "spicy-studio-cloudflare-free-tier-media"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       { "name": "AUTH", "class_name": "AuthDO" },
