@@ -121,7 +121,7 @@ export async function deleteUserTask(env, task) {
     throw new HttpError(409, "This task is still running. Its record cannot be removed yet.");
   }
   const keys = (task.outputs || []).map((output) => output.key).filter(Boolean);
-  if (keys.length) {
+  if (keys.length && env.MEDIA) {
     await env.MEDIA.delete(keys);
   }
   await deleteTask(env.DB, task.id);

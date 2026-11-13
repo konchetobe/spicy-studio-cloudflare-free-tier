@@ -13,14 +13,8 @@
     {
       "binding": "DB",
       "database_name": "spicy-studio-cloudflare-free-tier",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "279ae1c3-087e-4e58-aff7-103de2e20643",
       "migrations_dir": "./migrations"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "MEDIA",
-      "bucket_name": "spicy-studio-cloudflare-free-tier-media"
     }
   ],
   "durable_objects": {
@@ -39,7 +33,7 @@
     "crons": ["*/5 * * * *"]
   },
   "vars": {
-    "APP_ORIGIN": "",
+    "APP_ORIGIN": "https://spicy-studio-cloudflare-free-tier.kondiowenka.workers.dev",
     "SPICYMODELS_BASE_URL": "https://spicymodels.ai/api/v1",
     "RUNWARE_BASE_URL": "https://api.runware.ai/v1",
     "RUNWARE_MODEL": "deepseek:v4.1@flash-1017"

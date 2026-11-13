@@ -1,6 +1,6 @@
 # Spicy Studio — Cloudflare Free Tier
 
-A private, invite-only image and video generation studio for the SpicyModels catalog. This edition runs entirely on **Cloudflare Workers Free**: static assets, D1, R2, Durable Objects, and one Cron Trigger. No Containers, no Workers Paid plan, no Node server, and no local media disk.
+A private, invite-only image and video generation studio for the SpicyModels catalog. This edition runs entirely on **Cloudflare Workers Free**: static assets, D1, Durable Objects, and one Cron Trigger. R2 is optional; without it, outputs stay on the provider URL for 14 days. No Containers, no Workers Paid plan, no Node server, and no local media disk.
 
 The original Node/Express edition lives in [konchetobe/spicy-studio](https://github.com/konchetobe/spicy-studio). This repo is a separate Cloudflare port with its own history, deployment, and resources.
 
@@ -11,7 +11,7 @@ The original Node/Express edition lives in [konchetobe/spicy-studio](https://git
 - Admin can disable, delete, reset, or sign out users; see usage metadata; and create or revoke invites.
 - Each user adds their own SpicyModels key, and optionally a Runware key, in `/settings`.
 - API keys are encrypted with AES-GCM in D1 and are never returned to a browser.
-- Generated images and videos are stored in R2 and served through an ownership-checked `/media/*` route.
+- Generated images and videos are stored in R2 when it is enabled and served through an ownership-checked `/media/*` route. Without R2, the app redirects to the provider URL.
 - Task polling runs in a Durable Object, so it continues if the browser closes.
 - The UI is the existing vanilla SPA. There is no React, Next.js, SSR, or build step.
 
@@ -22,7 +22,7 @@ The original Node/Express edition lives in [konchetobe/spicy-studio](https://git
 | Workers | 100,000 requests/day, 10 ms CPU, 128 MB, 50 subrequests |
 | Static Assets | Free and unlimited requests |
 | D1 | 5 GB total, 5M rows read/day, 100k rows written/day |
-| R2 | 10 GB-month, 1M Class A/month, 10M Class B/month, free egress |
+| R2 (optional) | 10 GB-month, 1M Class A/month, 10M Class B/month, free egress |
 | Durable Objects | 100k requests/day, 13,000 GB-s/day, 5 GB SQLite storage |
 | Cron Triggers | Free, five triggers |
 
@@ -32,7 +32,7 @@ To stay inside those limits:
 - The client polls: 5 seconds while a task is running, 60 seconds when idle, paused when the tab is hidden.
 - There is no SSE and no permanent background process.
 - Password hashing runs in `AuthDO`, which has a 30-second CPU budget per request instead of the 10 ms normal Worker budget.
-- R2 storage is capped at 9 GB by the app. At the cap, new outputs remain on the provider URL and the user is told to delete old tasks.
+- When R2 is enabled, storage is capped at 9 GB by the app. At the cap, new outputs remain on the provider URL and the user is told to delete old tasks.
 - Uploads and individual outputs are capped at 95 MB.
 - A deployment defaults to a maximum of 10 users.
 - Per-user rate limits cover login, setup, invites, generation, uploads, and key changes.
@@ -40,7 +40,7 @@ To stay inside those limits:
 
 D1, Durable Object, and Worker limits are account-wide. If the same Cloudflare account runs other projects, they share the free allowance.
 
-R2 may ask for a payment method when first enabled. Usage inside the free allowance is not charged; the app's 9 GB cap is there to prevent accidental overage.
+R2 may ask for a payment method when first enabled. It is optional: if R2 is not enabled, the app keeps provider URLs instead of downloading media. Usage inside the free allowance is not charged; the app's 9 GB cap is there to prevent accidental overage when R2 is on.
 
 ## Deploy
 
@@ -55,6 +55,7 @@ Create the resources:
 
 ```bash
 npx wrangler d1 create spicy-studio-cloudflare-free-tier
+# Optional, only if R2 is enabled:
 npx wrangler r2 bucket create spicy-studio-cloudflare-free-tier-media
 ```
 
@@ -96,7 +97,7 @@ Cloudflare can build and deploy this repo directly from GitHub. This does not ne
 
 1. In the Cloudflare dashboard, create:
    - D1 database: `spicy-studio-cloudflare-free-tier`
-   - R2 bucket: `spicy-studio-cloudflare-free-tier-media`
+   - Optional: R2 bucket `spicy-studio-cloudflare-free-tier-media` if R2 is enabled
 2. Copy the D1 **Database ID** into `wrangler.jsonc`, replacing the all-zero `database_id`.
 3. Go to **Workers & Pages → Create application → GitHub**, select this repository, and name the Worker `spicy-studio-cloudflare-free-tier`. The name must match `wrangler.jsonc`.
 4. Set the build command to `npm ci`.
@@ -113,7 +114,7 @@ npx wrangler d1 migrations apply spicy-studio-cloudflare-free-tier --remote && n
 
 If Workers Builds cannot apply D1 migrations with its generated token, run the migration once from a machine logged in with `wrangler login`, then let Workers Builds handle the deploys.
 
-R2 must be enabled on the Cloudflare account first. Cloudflare may ask for a payment method even though the app stays inside the free allowance.
+R2 is optional. If you enable it, add the `r2_buckets` binding back to `wrangler.jsonc`. Cloudflare may ask for a payment method even though the app stays inside the free allowance.
 
 ## First run
 
@@ -210,11 +211,11 @@ If `KEY_ENCRYPTION_SECRET` is lost, every user must re-enter their keys. If `SET
 2. A task row is inserted in D1.
 3. `TaskPoller` submits it to SpicyModels with the user's key.
 4. Durable Object alarms poll the provider every 5 seconds for images and 8 seconds for videos.
-5. On completion, outputs are streamed to R2 with a byte counter and size checks.
+5. On completion, outputs are streamed to R2 with a byte counter and size checks when R2 is enabled. Without R2, the provider URL is kept.
 6. If the 9 GB cap would be exceeded, the output is left on the provider URL and marked as capped.
 7. The UI polls `/api/tasks` and shows the saved local copy or the provider URL.
 
-A task that is interrupted is recovered by the cron trigger or by reopening the app. Deleting a finished task removes its D1 row and R2 objects.
+A task that is interrupted is recovered by the cron trigger or by reopening the app. Deleting a finished task removes its D1 row and any R2 objects.
 
 ## Routes
 
@@ -276,11 +277,11 @@ src/optimizer.js             Runware optimizer + local fallback
 src/catalog.js               live model catalog + fallback
 src/tasks.js                 task creation and media deletion
 src/durable/auth-do.js       setup/login/invite/password hashing
-src/durable/task-poller.js   provider polling + R2 download
+src/durable/task-poller.js   provider polling + optional R2 download
 migrations/0001_init.sql     D1 schema
 public/                      SPA, auth screens, settings, admin
 test/                        node:test suites
-wrangler.jsonc               Worker, D1, R2, DO, cron config
+wrangler.jsonc               Worker, D1, optional R2, DO, cron config
 ```
 
 ## Operational notes

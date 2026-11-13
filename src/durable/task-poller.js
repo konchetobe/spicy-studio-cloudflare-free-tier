@@ -54,6 +54,9 @@ async function userKey(env, userId, provider) {
 }
 
 async function downloadToR2(env, task, url, index) {
+  if (!env.MEDIA) {
+    return { skipped: true, reason: "R2 is not enabled on this Cloudflare account. The provider URL is kept for 14 days." };
+  }
   const response = await fetch(url, {
     headers: { "User-Agent": "spicy-studio-cloudflare/1.0" },
     redirect: "follow",

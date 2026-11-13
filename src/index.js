@@ -304,7 +304,7 @@ app.delete("/api/admin/users/:id", requireAdmin, csrf, async (c) => {
   if (target.role === "admin") throw new HttpError(403, "The admin account cannot be deleted.");
   const tasks = await listTasks(c.env.DB, id, 1000);
   const keys = tasks.flatMap((task) => (task.outputs || []).map((output) => output.key).filter(Boolean));
-  if (keys.length) await c.env.MEDIA.delete(keys);
+  if (keys.length && c.env.MEDIA) await c.env.MEDIA.delete(keys);
   await deleteUser(c.env.DB, id);
   await audit(c.env.DB, c.get("user").id, "admin.user-delete", id, { email: target.email });
   return c.json({ ok: true });
@@ -526,6 +526,10 @@ app.get("/media/:taskId/:index", requireUser, async (c) => {
   if (!output.key) {
     if (output.remote) return c.redirect(output.remote);
     throw new HttpError(404, "Media not found.");
+  }
+  if (!c.env.MEDIA) {
+    if (output.remote) return c.redirect(output.remote);
+    throw new HttpError(404, "Media storage is not enabled.");
   }
   const rangeHeader = c.req.header("range");
   const head = await c.env.MEDIA.head(output.key);
