@@ -56,7 +56,10 @@ function staticResponse(request) {
   const file = path.resolve(PUBLIC, "." + pathname);
   if (file.startsWith(PUBLIC + path.sep) && existsSync(file) && statSync(file).isFile()) {
     return new Response(readFileSync(file), {
-      headers: { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream" },
+      headers: {
+        "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream",
+        "Cache-Control": "no-store",
+      },
     });
   }
   return new Response(readFileSync(path.join(PUBLIC, "index.html")), {

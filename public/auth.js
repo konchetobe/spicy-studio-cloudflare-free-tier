@@ -152,17 +152,17 @@ function renderSetup() {
   root.innerHTML = authLayout({
     eyebrow: "First-time setup",
     title: "Create the admin account",
-    subtitle: "This is the only account that can create invites and manage users. It works once, while the workspace has zero users.",
+    subtitle: "This is the only account that can create invites and manage users. The setup code is a local gate — it is <strong>not</strong> a Cloudflare API key and not a SpicyModels key.",
     body: `
       <form id="auth-form" class="auth-form">
-        ${field("Setup token", "setupToken", "password", { autocomplete: "one-time-code" })}
+        ${field("Setup code", "setupToken", "password", { autocomplete: "one-time-code" })}
         ${field("Your name", "name", "text", { autocomplete: "name" })}
         ${field("Email", "email", "email", { autocomplete: "username" })}
         ${field("Password", "password", "password", { autocomplete: "new-password", minlength: 12 })}
         ${field("Confirm password", "confirm", "password", { autocomplete: "new-password", minlength: 12 })}
         <button class="generate-btn auth-submit" type="submit">Create admin</button>
       </form>
-      <p class="auth-note">The setup token is the <code>SETUP_TOKEN</code> Worker secret you set in Cloudflare. It is never stored in the browser.</p>`,
+      <p class="auth-note">Local preview: the setup code is <code>SETUP_TOKEN</code> in <code>.dev.vars</code>. Production: the same value is a Worker secret. No Cloudflare API token is needed here.</p>`,
   });
   bindForm(async (data) => {
     const password = String(data.get("password") || "");
