@@ -90,6 +90,31 @@ npm run deploy
 
 Open the Worker URL. Because the workspace has no users, it redirects to `/setup`.
 
+### Deploy from GitHub with Workers Builds
+
+Cloudflare can build and deploy this repo directly from GitHub. This does not need a GitHub Actions workflow or a GitHub token.
+
+1. In the Cloudflare dashboard, create:
+   - D1 database: `spicy-studio-cloudflare-free-tier`
+   - R2 bucket: `spicy-studio-cloudflare-free-tier-media`
+2. Copy the D1 **Database ID** into `wrangler.jsonc`, replacing the all-zero `database_id`.
+3. Go to **Workers & Pages → Create application → GitHub**, select this repository, and name the Worker `spicy-studio-cloudflare-free-tier`. The name must match `wrangler.jsonc`.
+4. Set the build command to `npm ci`.
+5. Set the deploy command to:
+
+```bash
+npx wrangler d1 migrations apply spicy-studio-cloudflare-free-tier --remote && npx wrangler deploy
+```
+
+6. In the Worker’s **Settings → Variables & Secrets**, add:
+   - `SETUP_TOKEN` — a random value, e.g. `openssl rand -hex 32`
+   - `KEY_ENCRYPTION_SECRET` — a base64 32-byte value, e.g. `openssl rand -base64 32`
+7. Deploy. Then open the Worker URL and go to `/setup`.
+
+If Workers Builds cannot apply D1 migrations with its generated token, run the migration once from a machine logged in with `wrangler login`, then let Workers Builds handle the deploys.
+
+R2 must be enabled on the Cloudflare account first. Cloudflare may ask for a payment method even though the app stays inside the free allowance.
+
 ## First run
 
 1. Open `/setup`.
