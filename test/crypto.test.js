@@ -12,8 +12,9 @@ test("password hashing verifies the right password and rejects the wrong one", a
   assert.equal(await verifyPassword("wrong password", salt, 1000, hash), false);
 });
 
-test("default iteration count is at least 200k", () => {
-  assert.ok(PASSWORD_ITERATIONS >= 200_000);
+test("default iteration count fits the Workers PBKDF2 limit", () => {
+  assert.ok(PASSWORD_ITERATIONS >= 100_000);
+  assert.ok(PASSWORD_ITERATIONS <= 100_000);
 });
 
 test("user secret encryption round-trips and is bound to the user", async () => {

@@ -197,7 +197,7 @@ If `KEY_ENCRYPTION_SECRET` is lost, every user must re-enter their keys. If `SET
 
 ## Password and session handling
 
-- PBKDF2-HMAC-SHA256, 210,000 iterations, 16-byte salt, 32-byte hash.
+- PBKDF2-HMAC-SHA256, 100,000 iterations (the Workers runtime limit), 16-byte salt, 32-byte hash.
 - Hashing runs in `AuthDO`, not in the normal Worker handler.
 - Session tokens are 32 random bytes; D1 stores only their SHA-256 hash.
 - Cookies are HttpOnly, Secure (on HTTPS), SameSite=Lax, and last 7 days.
