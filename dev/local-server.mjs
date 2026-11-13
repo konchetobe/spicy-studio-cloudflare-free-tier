@@ -72,6 +72,7 @@ async function main() {
   const env = {
     ...vars,
     APP_ORIGIN: vars.APP_ORIGIN || "http://localhost:8787",
+    LOCAL_PREVIEW: "1",
     ASSETS: null,
     DB: await LocalD1.create({
       file: path.join(STATE, "d1.sqlite"),

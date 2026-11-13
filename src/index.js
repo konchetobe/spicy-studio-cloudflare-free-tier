@@ -79,6 +79,15 @@ app.onError((error, c) => {
 
 app.notFound((c) => c.json({ error: "Not found." }, 404));
 
+function isLocalPreview(env) {
+  return env.LOCAL_PREVIEW === "1";
+}
+
+async function limit(c, bucket, max, window, message = "Too many attempts. Try again later.") {
+  if (isLocalPreview(c.env)) return;
+  if (!(await rateLimit(c.env.DB, bucket, max, window))) throw new HttpError(429, message);
+}
+
 function origin(c) {
   return c.env.APP_ORIGIN || new URL(c.req.url).origin;
 }
@@ -130,9 +139,7 @@ app.get("/api/auth/state", async (c) => {
 
 app.post("/api/auth/setup", sameOrigin, async (c) => {
   const meta = requestMeta(c);
-  if (!(await rateLimit(c.env.DB, `setup:${meta.ip}`, 5, 3600))) {
-    throw new HttpError(429, "Too many setup attempts. Try again later.");
-  }
+  await limit(c, `setup:${meta.ip}`, 5, 3600, "Too many setup attempts. Try again later.");
   const body = await c.req.json().catch(() => ({}));
   const data = await callAuth(c.env, "/setup", { ...body, meta });
   return c.json(await authSession(c, data));
@@ -142,18 +149,14 @@ app.post("/api/auth/login", sameOrigin, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const meta = requestMeta(c);
   const email = String(body.email || "").slice(0, 254);
-  if (!(await rateLimit(c.env.DB, `login:${meta.ip}:${email.toLowerCase()}`, 10, 900))) {
-    throw new HttpError(429, "Too many sign-in attempts. Try again in a few minutes.");
-  }
+  await limit(c, `login:${meta.ip}:${email.toLowerCase()}`, 10, 900, "Too many sign-in attempts. Try again in a few minutes.");
   const data = await callAuth(c.env, "/login", { ...body, meta });
   return c.json(await authSession(c, data));
 });
 
 app.post("/api/invites/accept", sameOrigin, async (c) => {
   const meta = requestMeta(c);
-  if (!(await rateLimit(c.env.DB, `invite:${meta.ip}`, 10, 3600))) {
-    throw new HttpError(429, "Too many invite attempts. Try again later.");
-  }
+  await limit(c, `invite:${meta.ip}`, 10, 3600, "Too many invite attempts. Try again later.");
   const body = await c.req.json().catch(() => ({}));
   const data = await callAuth(c.env, "/invite", { ...body, meta });
   return c.json(await authSession(c, data));
@@ -161,9 +164,7 @@ app.post("/api/invites/accept", sameOrigin, async (c) => {
 
 app.post("/api/auth/reset", sameOrigin, async (c) => {
   const meta = requestMeta(c);
-  if (!(await rateLimit(c.env.DB, `reset:${meta.ip}`, 10, 3600))) {
-    throw new HttpError(429, "Too many reset attempts. Try again later.");
-  }
+  await limit(c, `reset:${meta.ip}`, 10, 3600, "Too many reset attempts. Try again later.");
   const body = await c.req.json().catch(() => ({}));
   return c.json(await callAuth(c.env, "/reset", body));
 });
@@ -351,9 +352,7 @@ app.get("/api/settings/keys", requireUser, async (c) => {
 
 app.put("/api/settings/keys/:provider", requireUser, csrf, async (c) => {
   const userId = c.get("user").id;
-  if (!(await rateLimit(c.env.DB, `keys:${userId}`, 20, 3600))) {
-    throw new HttpError(429, "Too many key changes. Try again later.");
-  }
+  await limit(c, `keys:${userId}`, 20, 3600, "Too many key changes. Try again later.");
   const provider = providerFromParam(c.req.param("provider"));
   const body = await c.req.json().catch(() => ({}));
   const key = String(body.key || "").trim();
@@ -428,9 +427,7 @@ app.get("/api/balance", requireUser, async (c) => {
 
 app.post("/api/optimize", requireUser, csrf, async (c) => {
   const userId = c.get("user").id;
-  if (!(await rateLimit(c.env.DB, `optimize:${userId}`, 30, 900))) {
-    throw new HttpError(429, "Too many optimizations. Wait a few minutes.");
-  }
+  await limit(c, `optimize:${userId}`, 30, 900, "Too many optimizations. Wait a few minutes.");
   const body = await c.req.json().catch(() => ({}));
   const { model: modelId, prompt, ...params } = body;
   if (!modelId) throw new HttpError(400, "Choose a model first.", "model");
@@ -454,9 +451,7 @@ app.post("/api/optimize", requireUser, csrf, async (c) => {
 
 app.post("/api/generate", requireUser, csrf, async (c) => {
   const userId = c.get("user").id;
-  if (!(await rateLimit(c.env.DB, `generate:${userId}`, 20, 900))) {
-    throw new HttpError(429, "Too many generations. Wait a few minutes.");
-  }
+  await limit(c, `generate:${userId}`, 20, 900, "Too many generations. Wait a few minutes.");
   const key = await getProviderKey(c, "spicy");
   if (!key) throw new HttpError(400, "Add your SpicyModels API key in Settings before generating.");
   const body = await c.req.json().catch(() => ({}));
@@ -487,9 +482,7 @@ app.delete("/api/tasks/:id", requireUser, csrf, async (c) => {
 
 app.post("/api/upload", requireUser, csrf, async (c) => {
   const userId = c.get("user").id;
-  if (!(await rateLimit(c.env.DB, `upload:${userId}`, 20, 3600))) {
-    throw new HttpError(429, "Too many uploads. Try again later.");
-  }
+  await limit(c, `upload:${userId}`, 20, 3600, "Too many uploads. Try again later.");
   const key = await getProviderKey(c, "spicy");
   if (!key) throw new HttpError(400, "Add your SpicyModels API key in Settings before uploading.");
   const length = Number(c.req.header("content-length") || 0);
